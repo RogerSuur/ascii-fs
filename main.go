@@ -1,36 +1,69 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func main() {
-	// fondid := []string{"standard.txt", "shadow.txt", "thinkertoy.txt"}
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run . [STRING] [BANNER]",
 
-	fontType := os.Args[2]
-	fontTypeFile := fontType + ".txt"
-	fmt.Println(fontTypeFile)
+			"EX: go run . something standard")
+	} else {
 
-	font, err := ioutil.ReadFile(fontTypeFile)
-	if err != nil {
-		fmt.Println("Cant find file")
+		lines, err := urlToLines("https://git.01.kood.tech/root/public/raw/branch/master/subjects/ascii-art/" + os.Args[2:3][0] + ".txt")
+		check(err)
+
+		arr := strings.Split(os.Args[1:2][0], "\\n")
+
+		printASCII(arr, lines)
 	}
-	art := strings.Split(string(font), "\n")
-	input := []byte(os.Args[1])
+}
 
-	var inputbyuser []int // user inputi teha byte kujule
-	for _, index := range input {
-		inputbyuser = append(inputbyuser, int(index))
-	}
-
-	for x := 1; x < 9; x++ {
-		output := ""
-		for ch := range inputbyuser {
-			output = output + art[((inputbyuser[ch]-32)*9)+x]
+func printASCII(arr, lines []string) {
+	for _, e := range arr {
+		for i := 0; i < 8; i++ {
+			printS := ""
+			r := []rune(e)
+			for _, runeR := range r {
+				printS += lines[int(runeR-32)*9+1+i]
+			}
+			if printS != "" {
+				fmt.Println(printS)
+			}
 		}
-		fmt.Println(output)
 	}
+}
+
+func urlToLines(url string) ([]string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return linesFromReader(resp.Body)
+}
+
+func linesFromReader(r io.Reader) ([]string, error) {
+	var lines []string
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
 }
