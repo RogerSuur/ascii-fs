@@ -3,8 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
 )
@@ -21,10 +19,8 @@ func main() {
 
 			"EX: go run . something standard")
 	} else {
-
-		lines, err := urlToLines("https://git.01.kood.tech/root/public/raw/branch/master/subjects/ascii-art/" + os.Args[2:3][0] + ".txt")
+		lines, err := linesFromReader(os.Args[2:3][0] + ".txt")
 		check(err)
-
 		arr := strings.Split(os.Args[1:2][0], "\\n")
 
 		printASCII(arr, lines)
@@ -46,18 +42,12 @@ func printASCII(arr, lines []string) {
 	}
 }
 
-func urlToLines(url string) ([]string, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	return linesFromReader(resp.Body)
-}
+func linesFromReader(filename string) ([]string, error) {
+	f, _ := os.Open(filename) // opens file
+	defer f.Close() 
 
-func linesFromReader(r io.Reader) ([]string, error) {
 	var lines []string
-	scanner := bufio.NewScanner(r)
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
